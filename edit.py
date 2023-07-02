@@ -45,7 +45,7 @@ class RandomAfd:
 '''.format(title)
 
     def _mark_afd(self, title):
-        if not args.vfd:
+        if not self.args.vfd:
             return
         page = pywikibot.Page(self.site, title)
         text = page.text
@@ -58,12 +58,17 @@ class RandomAfd:
     def main(self):
         self.logger.info('start')
 
-        if not re.search(r'^\d{4}/\d{2}/\d{2}$', args.date):
+        if not re.search(r'^\d{4}/\d{2}/\d{2}$', self.args.date):
             self.logger.error('invalid date format')
             return
 
         text = '{{subst:AfdHead}}\n'
-        total_pages = self.args.n1 + self.args.n2 + self.args.n3
+
+        argdict = vars(args)
+        total_pages = 0
+        for i in range(1, 6):
+            total_pages += argdict[f'n{i}']
+
         pages = RandomPageGenerator(total=total_pages, site=self.site, namespaces=[0])
         for _ in range(self.args.n1):
             page = next(pages)
@@ -81,12 +86,34 @@ class RandomAfd:
             self._mark_afd(page.title())
         if self.args.n2 > 0:
             text += '''
+<!-- Twinkle: User:{{subst:REVISIONUSER}} 的 fame 提刪插入點，請勿變更或移除此行，除非不再於此頁提刪 -->
 ----
 :{{删除}}理據：沒有足夠的可靠資料來源能夠讓這個條目符合[[Wikipedia:關注度]]中的標準
 提报以上<u>关注度不足</u>条目的維基人及時間：<br id="no-new-title" />~~~~
 '''
 
         for _ in range(self.args.n3):
+            page = next(pages)
+            text += self._get_afd_text(page.title())
+            self._mark_afd(page.title())
+
+        if self.args.n4 > 0:
+            text += '''
+==批量提刪==
+'''
+        for _ in range(self.args.n4):
+            page = next(pages)
+            text += self._get_fame_text(page.title())
+            self._mark_afd(page.title())
+        if self.args.n4 > 0:
+            text += '''
+<!-- Twinkle: User:{{subst:REVISIONUSER}} 的 batch 提刪插入點，請勿變更或移除此行，除非不再於此頁提刪 -->
+----
+:{{删除}}理據：Test
+提报以上頁面的維基人及時間：<br id="no-new-title" />~~~~
+'''
+
+        for _ in range(self.args.n5):
             page = next(pages)
             text += self._get_afd_text(page.title())
             self._mark_afd(page.title())
@@ -105,6 +132,8 @@ if __name__ == '__main__':
     parser.add_argument('--n1', type=int, default=3)
     parser.add_argument('--n2', type=int, default=5)
     parser.add_argument('--n3', type=int, default=3)
+    parser.add_argument('--n4', type=int, default=3)
+    parser.add_argument('--n5', type=int, default=3)
     parser.add_argument('--vfd', action='store_true')
     parser.add_argument('-d', '--debug', action='store_const', dest='loglevel', const=logging.DEBUG, default=logging.INFO)
     args = parser.parse_args()
